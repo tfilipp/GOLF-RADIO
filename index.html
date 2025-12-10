@@ -2,321 +2,380 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#ffffff">
     <title>GOLF RADIO*</title>
+    
+    <link rel="icon" href="http://r.oddfuture.ru:4321/favicon.png" type="image/png">
+
     <style>
-        /* --- ШРИФТЫ --- */
+        /* --- ЛОКАЛЬНЫЕ ШРИФТЫ --- */
         @font-face {
-            font-family: "Diagramatika Display Regular";
-            src: url("https://db.onlinewebfonts.com/t/2a046857838e215d46e580f8d8aa8543.eot");
-            src: url("https://db.onlinewebfonts.com/t/2a046857838e215d46e580f8d8aa8543.eot?#iefix")format("embedded-opentype"),
-            url("https://db.onlinewebfonts.com/t/2a046857838e215d46e580f8d8aa8543.woff2")format("woff2"),
-            url("https://db.onlinewebfonts.com/t/2a046857838e215d46e580f8d8aa8543.woff")format("woff"),
-            url("https://db.onlinewebfonts.com/t/2a046857838e215d46e580f8d8aa8543.ttf")format("truetype"),
-            url("https://db.onlinewebfonts.com/t/2a046857838e215d46e580f8d8aa8543.svg#Diagramatika Display Regular")format("svg");
+            font-family: "Diagramatika";
+            src: url("Diagramatika.ttf") format("truetype");
+            font-weight: normal;
+            font-style: normal;
         }
-
-        /* --- ЦВЕТА --- */
-        :root {
-            --bg-paused: #ffffff;
-            --text-paused: #000000;
-            --text-playing: #ffffff;
-            --menu-bg: rgba(255, 255, 255, 0.95);
-            --menu-text: #000000;
-            --link-color: #ff0077;
+        @font-face {
+            font-family: "JBMono";
+            src: url("JBMono.ttf") format("truetype");
+            font-weight: normal;
+            font-style: normal;
         }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-paused: #000000;
-                --text-paused: #ffffff;
-                --menu-bg: rgba(0, 0, 0, 0.95);
-                --menu-text: #ffffff;
-            }
+        
+        :root { 
+            --bg: #ffffff; 
+            --text: #000000; 
+            --surface: #f0f0f0; 
+            --radius-top: 32px; 
+            --radius-bottom: 16px; 
+            --ease: cubic-bezier(0.16, 1, 0.3, 1); 
         }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: "Diagramatika Display Regular", sans-serif;
-            height: 100vh; width: 100vw; overflow: hidden;
-            background-color: var(--bg-paused);
-            color: var(--text-paused);
-            transition: background-color 0.6s ease, color 0.6s ease;
-            position: relative;
+        
+        @media (prefers-color-scheme: dark) { 
+            :root { 
+                --bg: #050505; 
+                --text: #ffffff; 
+                --surface: #1a1a1a; 
+            } 
         }
-
-        /* --- ОБЛОЖКА --- */
-        .cover-bg {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-size: cover; background-position: center;
-            z-index: 1; filter: blur(30px) brightness(0.6);
-            transform: scale(1.1); transition: opacity 1s ease, background-image 1s ease;
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            font-family: "Diagramatika", sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            height: 100vh; 
+            overflow: hidden; 
+            transition: background 0.6s var(--ease), color 0.6s var(--ease); 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        /* --- ДВИЖУЩИЙСЯ ФОН (INFINITE TILING) --- */
+        .ambient-wrapper {
+            position: absolute;
+            top: -50%; left: -50%; 
+            width: 200%; height: 200%;
+            z-index: 0;
+            overflow: hidden;
             opacity: 0;
+            transition: opacity 1.5s ease;
+            /* Градиентная маска, чтобы низ уходил в цвет фона */
+            mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+            pointer-events: none;
         }
-
-        /* --- КОНТЕЙНЕР --- */
-        .container {
-            position: relative; z-index: 2; height: 100%; width: 100%;
-            display: flex; flex-direction: column;
-            padding: 2rem;
-        }
-
-        .header {
-            display: flex; justify-content: space-between; align-items: flex-start;
-            width: 100%; position: relative;
-        }
-
-        .logo {
-            font-size: 2.5rem; letter-spacing: -0.02em;
-            position: relative; z-index: 5;
-        }
-
-        .menu-btn {
-            font-size: 1.5rem; cursor: pointer;
-            z-index: 20; user-select: none;
-            text-transform: uppercase;
-            padding: 5px 10px;
-            text-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
-
-        .player-wrapper {
-            flex-grow: 1; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; text-align: center;
-            padding-bottom: 20%;
-        }
-
-        .play-btn {
-            width: 80px; height: 80px; cursor: pointer; margin-bottom: 2rem;
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .play-btn:active { transform: scale(0.9); }
-        .play-btn svg { width: 100%; height: 100%; fill: currentColor; }
-
-        body.playing .play-btn svg { drop-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        body.playing { color: var(--text-playing); }
-        body.playing .cover-bg { opacity: 1; }
-        body.playing .menu-btn { color: #fff; }
-
-        .track-info { display: flex; flex-direction: column; gap: 0.5rem; }
-        .track-title { font-size: 3rem; line-height: 1; }
-        .track-artist { font-size: 1.8rem; opacity: 0.9; }
-        .track-album { font-size: 1.2rem; opacity: 0.7; margin-top: 5px; }
-
-        /* --- САЙДБАР --- */
-        .sidebar {
-            position: fixed; top: 0; right: 0;
+        
+        .moving-bg {
             width: 100%; height: 100%;
-            background-color: var(--menu-bg);
-            color: var(--menu-text);
-            backdrop-filter: blur(10px);
-            z-index: 100;
-            transform: translateX(100%);
-            transition: transform 0.4s cubic-bezier(0.77, 0, 0.175, 1);
-            display: flex; flex-direction: column;
-            padding: 2rem; overflow-y: auto;
+            background-size: 500px 500px; /* Размер плитки */
+            background-repeat: repeat;
+            /* Анимация движения */
+            animation: moveDiag 60s linear infinite;
+            filter: blur(40px) saturate(1.2) brightness(0.8);
+        }
+
+        @keyframes moveDiag {
+            from { transform: translate(0, 0); }
+            to { transform: translate(-250px, -250px); } /* Сдвиг на половину плитки для бесшовности */
+        }
+        
+        /* --- UI СЛОЙ --- */
+        .ui-layer { position: relative; z-index: 10; height: 100%; display: flex; flex-direction: column; padding: 24px; }
+        
+        .header { display: flex; justify-content: center; align-items: center; height: 60px; position: relative; }
+        .logo { font-size: 2rem; letter-spacing: -0.03em; }
+        .menu-btn { 
+            position: absolute; right: 0; 
+            font-family: "JBMono", monospace; font-size: 0.8rem; 
+            cursor: pointer; padding: 10px 16px; 
+            border-radius: 20px; 
+            background: rgba(128,128,128,0.15); 
+            backdrop-filter: blur(10px); 
+            transition: 0.2s; 
+            text-transform: uppercase; 
+        }
+        
+        .stage { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2.5rem; padding-bottom: 10vh; }
+        
+        /* КАРТОЧКА */
+        .card { 
+            width: 100%; max-width: 340px; aspect-ratio: 1/1; 
+            background: var(--surface); 
+            border-radius: var(--radius-top) var(--radius-top) var(--radius-bottom) var(--radius-bottom); 
+            overflow: hidden; position: relative; 
+            box-shadow: 0 30px 60px -15px rgba(0,0,0,0.25); 
+            transition: 0.6s var(--ease); 
+        }
+        body.paused .card { transform: scale(0.92); box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1); }
+        
+        .cover { width: 100%; height: 100%; background-size: cover; background-position: center; transition: 0.5s ease; opacity: 0; }
+        body.playing .cover { transform: scale(1); } 
+        body.paused .cover { transform: scale(1.05); }
+        
+        /* КНОПКИ И ТРОББЕР */
+        .overlay { 
+            position: absolute; inset: 0; 
+            display: flex; justify-content: center; align-items: center; 
+            cursor: pointer; 
+            background: radial-gradient(circle, rgba(0,0,0,0.1) 0%, transparent 70%); 
+        }
+        
+        .icon { 
+            width: 72px; height: 72px; fill: #fff; 
+            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4)); 
+            transition: 0.3s var(--ease); 
+            position: absolute;
+        }
+        
+        /* Троббер (Loader) */
+        .loader {
+            width: 60px; height: 60px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            position: absolute;
+            opacity: 0;
+            transition: opacity 0.3s;
+            filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
+        }
+        .loader.active {
+            opacity: 1;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Логика видимости кнопок */
+        /* По умолчанию (Pause): Play виден, Pause скрыт, Loader скрыт */
+        #i-play { opacity: 1; transform: scale(1); }
+        #i-pause { opacity: 0; transform: scale(0.5); }
+        
+        /* Состояние: Playing (Играет) */
+        body.playing #i-play { opacity: 0; transform: scale(0.5); }
+        body.playing #i-pause { opacity: 0; transform: scale(1); } /* Скрыт, пока не наведешь */
+        body.playing .overlay:hover #i-pause { opacity: 1; } /* На ПК при ховере */
+        body.playing .overlay:active #i-pause { opacity: 1; } /* На таче при нажатии */
+
+        /* Состояние: Loading (Грузится) */
+        body.loading #i-play { opacity: 0; transform: scale(0.5); }
+        body.loading #i-pause { opacity: 0; transform: scale(0.5); }
+        
+        /* ИНФОРМАЦИЯ О ТРЕКЕ */
+        .info { text-align: center; display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 400px; padding: 0 10px; }
+        
+        .anim-text { transition: 0.4s var(--ease); opacity: 1; transform: translateY(0); } 
+        .anim-text.out { opacity: 0; transform: translateY(10px); }
+        
+        .t-title { font-size: 2.5rem; line-height: 0.95; letter-spacing: -0.02em; }
+        .t-artist { font-size: 1.4rem; opacity: 0.7; }
+        /* JetBrains Mono для альбома - чтобы не прыгало */
+        .t-album { 
+            font-family: "JBMono", monospace; 
+            font-size: 0.75rem; 
+            opacity: 0.5; 
+            text-transform: uppercase; 
+            letter-spacing: 0.1em; 
+            margin-top: 5px; 
+            /* Фикс прыгания: фиксированная высота строки */
+            min-height: 1.2em; 
+        }
+        
+        /* SIDEBAR */
+        .sidebar { 
+            position: fixed; inset: 0; background: var(--bg); 
+            z-index: 100; transform: translateX(100%); 
+            transition: 0.5s var(--ease); 
+            display: flex; flex-direction: column; padding: 30px; 
         }
         .sidebar.open { transform: translateX(0); }
-        .sidebar-header { display: flex; justify-content: flex-end; margin-bottom: 2rem; }
-        .close-btn { font-size: 3rem; cursor: pointer; line-height: 0.8; }
-        .queue-title { font-size: 2rem; margin-bottom: 1rem; border-bottom: 2px solid currentColor; display: inline-block; }
-        .queue-list { list-style: none; margin-bottom: 3rem; }
-        .queue-item { margin-bottom: 1rem; opacity: 0.8; font-size: 1.2rem; display: flex; flex-direction: column; }
-        .q-artist { font-size: 0.9em; opacity: 0.7; }
-        .q-title { font-weight: bold; }
+        .sb-head { display: flex; justify-content: flex-end; margin-bottom: 2rem; } 
+        .close { font-size: 2.5rem; cursor: pointer; line-height: 0.5; }
+        .sb-title { font-family: "JBMono", monospace; font-size: 1rem; opacity: 0.4; margin-bottom: 1.5rem; border-bottom: 1px solid; display: inline-block; padding-bottom: 5px; text-transform: uppercase; }
         
-        .credits {
-            margin-top: auto; font-size: 1rem; line-height: 1.5; opacity: 0.8;
-            padding-top: 2rem; border-top: 1px solid rgba(128,128,128,0.3);
-        }
-        .credits a { color: inherit; text-decoration: none; border-bottom: 1px dotted currentColor; }
-        .credits a:hover { color: var(--link-color); border-bottom: 1px solid var(--link-color); }
-
-        @media (min-width: 768px) {
-            .container { max-width: 900px; margin: 0 auto; padding: 4rem; }
-            .header { justify-content: center; }
-            .logo { position: absolute; left: 50%; transform: translateX(-50%); width: auto; text-align: center; }
-            .menu-btn { position: absolute; right: 0; top: 10px; }
-            .logo { font-size: 3rem; }
-            .track-title { font-size: 4.5rem; }
-            .track-artist { font-size: 2.5rem; }
-            .sidebar { width: 400px; border-left: 1px solid rgba(255,255,255,0.1); }
+        .list { list-style: none; overflow-y: auto; flex: 1; }
+        .item { margin-bottom: 1.5rem; opacity: 0.5; transition: 0.2s; display: flex; flex-direction: column; gap: 2px;} 
+        .item:first-child { opacity: 1; }
+        
+        .i-ti { font-family: "Diagramatika", sans-serif; font-size: 1.2rem; line-height: 1; } 
+        .i-ar { font-family: "JBMono", monospace; font-size: 0.8rem; opacity: 0.7; }
+        
+        .credits { font-family: "JBMono", monospace; font-size: 0.7rem; opacity: 0.4; margin-top: 1rem; border-top: 1px solid rgba(128,128,128,0.2); padding-top: 1rem; line-height: 1.6; }
+        .credits a { color: inherit; text-decoration: none; border-bottom: 1px dotted; }
+        
+        @media (min-width: 768px) { 
+            .sidebar { width: 450px; left: auto; border-left: 1px solid rgba(128,128,128,0.1); } 
+            .t-title { font-size: 4rem; } .t-artist { font-size: 2rem; } .card { max-width: 420px; }
         }
     </style>
 </head>
-<body class="">
+<body class="paused">
 
-    <div class="cover-bg" id="coverBg"></div>
+    <div class="ambient-wrapper" id="bg-wrap">
+        <div class="moving-bg" id="bg"></div>
+    </div>
 
-    <div class="container">
+    <div class="ui-layer">
         <div class="header">
-            <div class="logo">GOLF radio*</div>
-            <div class="menu-btn" onclick="toggleMenu()">МЕНЮ</div>
+            <div class="logo">GOLF RADIO*</div>
+            <div class="menu-btn" onclick="menu(true)">MENU</div>
         </div>
 
-        <div class="player-wrapper">
-            <div class="play-btn" id="playBtn">
-                <svg id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                <svg id="icon-pause" viewBox="0 0 24 24" style="display: none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        <div class="stage">
+            <div class="card">
+                <div class="cover" id="cover"></div>
+                <div class="overlay" id="btn">
+                    <svg class="icon" id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <svg class="icon" id="i-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    <div class="loader" id="loader"></div>
+                </div>
             </div>
 
-            <div class="track-info">
-                <div class="track-title" id="title">GOLF RADIO*</div>
-                <div class="track-artist" id="artist">нажмите, чтобы слушать</div>
-                <div class="track-album" id="album"></div>
+            <div class="info">
+                <div class="t-title anim-text" id="tit">GOLF RADIO*</div>
+                <div class="t-artist anim-text" id="art">нажмите, чтобы слушать</div>
+                <div class="t-album anim-text" id="alb"></div>
             </div>
         </div>
     </div>
 
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="close-btn" onclick="toggleMenu()">×</div>
-        </div>
-        
-        <div class="queue-title">ДАЛЕЕ В ЭФИРЕ</div>
-        <ul class="queue-list" id="queueList">
-            <li class="queue-item">Загрузка...</li>
-        </ul>
-
+    <div class="sidebar" id="sb">
+        <div class="sb-head"><div class="close" onclick="menu(false)">×</div></div>
+        <div class="sb-title">ДАЛЕЕ В ЭФИРЕ</div>
+        <ul class="list" id="list"><li class="item">Загрузка...</li></ul>
         <div class="credits">
-            разработка: <a href="https://t.me/vlcguy" target="_blank">@vlcguy</a><br>
-            при поддержке: <a href="https://t.me/tylerfme" target="_blank">@tylerfme</a><br>
-            вайб: <a href="https://t.me/+VnzQr5tnePk5MDMy" target="_blank">golf for home</a><br>
-            &lt;3
+            dev: <a href="https://t.me/vlcguy">@vlcguy</a><br>
+            sup: <a href="https://t.me/tylerfme">@tylerfme</a><br>
+            vibe: <a href="https://t.me/+VnzQr5tnePk5MDMy">golf for home</a>
         </div>
     </div>
 
-    <audio id="audioStream" preload="none">
+    <audio id="audio" preload="none">
         <source src="http://r.oddfuture.ru:1234" type="audio/wav">
     </audio>
 
     <script>
-        const API_BASE = "http://r.oddfuture.ru:4321"; 
+        const API = "http://r.oddfuture.ru:4321"; 
         
-        const audio = document.getElementById('audioStream');
-        const playBtn = document.getElementById('playBtn');
-        const iconPlay = document.getElementById('icon-play');
-        const iconPause = document.getElementById('icon-pause');
-        const coverBg = document.getElementById('coverBg');
-        const sidebar = document.getElementById('sidebar');
-        const queueList = document.getElementById('queueList');
-        
-        const uiTitle = document.getElementById('title');
-        const uiArtist = document.getElementById('artist');
-        const uiAlbum = document.getElementById('album');
+        const el = (id) => document.getElementById(id);
+        const audio = el('audio');
+        let playing = false;
+        let lastCov = "";
 
-        let isPlaying = false;
-        let lastCover = "";
-        let menuOpen = false;
+        // UI Элементы
+        const bgWrap = el('bg-wrap');
+        const bg = el('bg');
+        const loader = el('loader');
 
-        // --- МЕНЮ ---
-        function toggleMenu() {
-            menuOpen = !menuOpen;
-            if (menuOpen) {
-                sidebar.classList.add('open');
-                updateQueue();
+        // КЛИК ПО КНОПКЕ
+        el('btn').onclick = () => {
+            if (playing) {
+                // STOP
+                audio.pause(); 
+                audio.src = ""; 
+                audio.load();
+                setUI('paused');
             } else {
-                sidebar.classList.remove('open');
+                // START
+                setUI('loading'); // Сразу включаем троббер
+                
+                audio.src = "http://r.oddfuture.ru:1234";
+                audio.load();
+                
+                // Промис воспроизведения
+                audio.play()
+                    .then(() => {
+                        // Как только пошел звук (или буфер наполнился)
+                        setUI('playing');
+                    })
+                    .catch(e => {
+                        console.log("Play error:", e);
+                        setUI('paused'); // Если ошибка - вернули паузу
+                    });
+            }
+        };
+
+        // СОСТОЯНИЯ ИНТЕРФЕЙСА
+        function setUI(state) {
+            document.body.className = state; // 'paused', 'loading', 'playing'
+            
+            if (state === 'playing') {
+                playing = true;
+                loader.classList.remove('active');
+                fetchMeta();
+            } else if (state === 'loading') {
+                playing = false; // Технически еще не играем
+                loader.classList.add('active');
+            } else {
+                playing = false;
+                loader.classList.remove('active');
             }
         }
 
-        // --- ОЧЕРЕДЬ ---
-        async function updateQueue() {
+        // Данные
+        function txt(id, val) {
+            const d = el(id);
+            if (d.innerText !== val) {
+                d.classList.add('out');
+                setTimeout(() => { d.innerText = val; d.classList.remove('out'); }, 400);
+            }
+        }
+
+        async function fetchMeta() {
+            if(!playing && document.body.className !== 'playing') return;
             try {
-                const res = await fetch(`${API_BASE}/api/queue`);
-                const data = await res.json();
-                
-                queueList.innerHTML = "";
-                
-                if (data.length === 0) {
-                    queueList.innerHTML = "<li class='queue-item'>Конец плейлиста</li>";
+                const res = await fetch(`${API}/api/status`);
+                const d = await res.json();
+
+                if (d.state === 'paused') {
+                    txt('tit', 'ЭФИР ОТКЛЮЧЕН');
+                    txt('art', 'Техработы');
                     return;
                 }
 
-                data.forEach(track => {
-                    const li = document.createElement('li');
-                    li.className = 'queue-item';
-                    li.innerHTML = `<span class='q-title'>${track.title}</span><span class='q-artist'>${track.artist}</span>`;
-                    queueList.appendChild(li);
-                });
-            } catch (e) {
-                console.error("Queue Error:", e);
-                queueList.innerHTML = "<li class='queue-item'>Ошибка загрузки</li>";
-            }
-        }
+                txt('tit', d.title);
+                txt('art', d.artist);
+                txt('alb', d.album);
 
-        // --- ПЛЕЕР ---
-        function togglePlay() {
-            if (isPlaying) {
-                audio.pause();
-                audio.src = ""; 
-                audio.load();
-                setUIState(false);
-            } else {
-                audio.src = "http://r.oddfuture.ru:1234";
-                audio.load();
-                audio.play().catch(e => console.log("Blocked:", e));
-                setUIState(true);
-            }
-        }
-
-        function setUIState(playing) {
-            isPlaying = playing;
-            if (playing) {
-                document.body.classList.add('playing');
-                iconPlay.style.display = 'none';
-                iconPause.style.display = 'block';
-                updateMetadata(); // Сразу грузим данные
-            } else {
-                document.body.classList.remove('playing');
-                iconPlay.style.display = 'block';
-                iconPause.style.display = 'none';
-                // При паузе оставляем последнее название трека, не сбрасываем
-            }
-        }
-
-        playBtn.addEventListener('click', togglePlay);
-
-        // --- МЕТАДАННЫЕ ---
-        async function updateMetadata() {
-            if (!isPlaying) return; 
-
-            try {
-                const response = await fetch(`${API_BASE}/api/status`);
-                const data = await response.json();
-
-                if (data.state === "paused") {
-                     uiTitle.innerText = "ЭФИР ОТКЛЮЧЕН";
-                     uiArtist.innerText = "ведутся техработы";
-                     return;
-                }
-
-                if (uiTitle.innerText !== data.title) {
-                    uiTitle.innerText = data.title;
-                    if (menuOpen) updateQueue(); 
-                }
-                if (uiArtist.innerText !== data.artist) uiArtist.innerText = data.artist;
-                if (uiAlbum.innerText !== data.album) uiAlbum.innerText = data.album;
-
-                if (data.cover && data.cover !== lastCover) {
-                    lastCover = data.cover;
-                    const img = new Image();
-                    img.src = data.cover;
+                if (d.cover && d.cover !== lastCov) {
+                    lastCov = d.cover;
+                    const img = new Image(); img.src = d.cover;
                     img.onload = () => {
-                        coverBg.style.backgroundImage = `url('${data.cover}')`;
+                        // Ставим картинку в движущийся фон
+                        bg.style.backgroundImage = `url('${d.cover}')`;
+                        bgWrap.style.opacity = 1;
+                        
+                        // И в карточку
+                        el('cover').style.backgroundImage = `url('${d.cover}')`;
+                        el('cover').style.opacity = 1;
                     };
-                } else if (!data.cover) {
-                    coverBg.style.backgroundImage = "none";
+                } else if (!d.cover) {
+                    bgWrap.style.opacity = 0;
+                    el('cover').style.opacity = 0;
                 }
-
-            } catch (e) {
-                console.error("API Error:", e);
-                // Опционально: можно писать "Слабый сигнал..." при ошибке сети
-            }
+            } catch(e) {}
         }
 
-        setInterval(updateMetadata, 3000);
-        // При загрузке UI уже в нужном состоянии (нажмите play)
+        async function loadQueue() {
+            try {
+                const res = await fetch(`${API}/api/queue`);
+                const d = await res.json();
+                const l = el('list'); l.innerHTML = "";
+                if(!d.length) l.innerHTML = "<li class='item'>Пусто</li>";
+                d.forEach(t => {
+                    l.innerHTML += `<li class='item'><span class='i-ti'>${t.title}</span><span class='i-ar'>${t.artist}</span></li>`;
+                });
+            } catch(e){}
+        }
+
+        function menu(open) {
+            const sb = el('sb');
+            if(open) { sb.classList.add('open'); loadQueue(); }
+            else sb.classList.remove('open');
+        }
+
+        setInterval(fetchMeta, 3000);
     </script>
 </body>
 </html>
